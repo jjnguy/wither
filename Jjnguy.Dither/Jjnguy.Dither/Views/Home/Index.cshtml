@@ -1,0 +1,61 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <canvas id="asdf"></canvas>
+</div>
+
+@section Scripts
+{
+<script>
+  var ca = document.getElementById("asdf");
+  var ct = ca.getContext("2d");
+
+  var imgUrl = "/img";
+  var img = new Image();
+  img.onload = function () {
+    ca.width = img.width;
+    ca.height = img.height;
+    ct.drawImage(img, 0, 0);  
+
+    
+  };
+  img.src = imgUrl; 
+
+  ca.onclick = function () {
+    dither(ct, ca);
+  }
+
+  function dither(ctx, canvas) {
+    var bytesPerColor = 4;
+    var white = 255.0;
+    var black = 0;
+    var errors = [];
+    for (var x = 0; x < canvas.width; x++) errors[x] = [];
+    var imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    for (var initialIndex = 0; initialIndex < imgData.height * imgData.width * bytesPerColor; initialIndex += bytesPerColor) {
+      var x = (initialIndex / bytesPerColor) % imgData.width;
+      var y = Math.floor((initialIndex / bytesPerColor) / imgData.width);
+      var grey = rgbToGrey(imgData.data[initialIndex + 0], imgData.data[initialIndex + 1], imgData.data[initialIndex + 2]);
+      var adjustedGrey = grey + errors[x][y];
+      var color = adjustedGrey >= (white + black) / 2 ? white : black;
+      var error = grey - color;
+      if (x < imgData.width - 1) errors[x + 1][y] = error * 7.0/16;
+      if (y < imgData.height - 1) errors[x][y + 1] = error * 5.0/16;
+      if (x < imgData.width - 1 && y < imgData.height - 1) errors[x + 1][y + 1] = error * 1.0/16;
+      if (x > 0 && y < imgData.height - 1) errors[x - 1][y + 1] = error * 3.0/16;
+      imgData.data[initialIndex + 0] = color;
+      imgData.data[initialIndex + 1] = color;
+      imgData.data[initialIndex + 2] = color;
+    }
+    ctx.putImageData(imgData,0,0);
+  }
+
+  function rgbToGrey(r, g, b) {
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  
+</script>
+}
